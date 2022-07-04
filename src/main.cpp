@@ -1,5 +1,6 @@
 #include <thermistor.h>
 #include <Arduino.h>
+#define ssr 5
 
 thermistor therm1(A0, 0); // Analog Pin which is connected to the 3950 temperature sensor, and 0 represents TEMP_SENSOR_0 (see configuration.h for more information).
 
@@ -33,6 +34,7 @@ void PID_controller();
 void setup()
 {
   // put your setup code here, to run once:
+  pinMode(ssr, OUTPUT);
   Serial.begin(9600); // initialize port serial at 9600 Bauds.
   R = 10;             // 10
   Q = 0.1;            // 0,2
@@ -57,9 +59,13 @@ void loop()
   }
 
   PID_controller();
+  Serial.print(seconds);
+  Serial.print(", ");
   Serial.print(kalmanFilterData);
   Serial.print(", ");
-  Serial.println(temp);
+  Serial.print(PID_Output);
+  Serial.print(", ");
+  Serial.println(pwm_value);
 }
 
 void count_seconds()
@@ -81,7 +87,7 @@ void PID_controller()
 
     if (kalmanFilterData < 140)
     {
-      temp_setpoint = seconds * 1.666;
+      temp_setpoint = seconds * 1.666; // step 1: setpoint = seconds * 1.666 per derajat celcius
     }
     // Calculate PID
     PID_ERROR = temp_setpoint - kalmanFilterData;
@@ -100,6 +106,8 @@ void PID_controller()
     }
     pwm_value = 255 - PID_Output;
     PREV_ERROR = PID_ERROR;
+
+    analogWrite(ssr, 0);
 
     millis_before = millis_now; // Update millis_before
   }
